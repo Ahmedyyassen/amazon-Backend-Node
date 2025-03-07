@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const {ADMIN, MANGER, USER} = require('../utils/userRols');
-const { default: isEmail } = require('validator/lib/isEmail');
+const { isEmail } = require('validator');
 
 const userSchema = new Schema({
     username:{
@@ -27,9 +27,20 @@ const userSchema = new Schema({
         type: String,
         enum: [USER, ADMIN, MANGER],
         default: USER,
-    }
+    },
+    avatar: {
+            url:{ type: String, default: process.env.PROFILE_IMAGE  },
+            public_id: { type: String, default: null },
+      },
+      createUserAt: {
+        type: Date,
+        default: Date.now(),
+      }
 });
+
 const userModel = model('User', userSchema);
+
+// Export functions
 const getUserByEmail = (email)=> userModel.findOne({email});
 const getUserById = (id)=> userModel.findOne({_id: id});
 const createUser = (data)=> new userModel(data);

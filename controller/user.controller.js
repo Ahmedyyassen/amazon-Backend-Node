@@ -4,10 +4,12 @@ const appError = require('../utils/AppError');
 const status = require('../utils/httpStatusText');
 const generateJWT = require('../utils/generateJWT');
 const { hash, compare } = require('bcryptjs');
+const { cloudinaryUploadImage } = require('../utils/cloudinary')
 
 const register = asyncWrapper(
     async(req, res, next)=>{
         const { username, email, password, role } = req.body;
+        
         if(!username ||!email ||!password){
             const error = appError.create("All fields are required", 203, status[203]);
             return next(error);
@@ -26,6 +28,11 @@ const register = asyncWrapper(
             role
         })
         const token = await generateJWT({ id: newUser._id, email, role });
+        if(req.file){
+          const image = await cloudinaryUploadImage(req.file);
+            newUser.avatar = { url: image.secure_url, public_id: image.public_id };
+            // await cloudinaryRemoveImage(newUser.avatar.public_id);
+        }
         newUser.token = token;
         await saveUser(newUser);
         res.status(201).json({status: status[201],message: "User registered successfully", data: {newUser} })

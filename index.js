@@ -8,7 +8,7 @@ const app = express();
 const userRoutes = require('./routes/user.routes');
 const status = require('./utils/httpStatusText');
 const cookieParser = require('cookie-parser')
- 
+const { join } = require('path'); 
 
 // Middleware
 app.use(cors({
@@ -17,9 +17,12 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.urlencoded({extended: false}));
+
 
 //routes
 app.use('/api/users', userRoutes);
+app.use('/api/uploads', express.static(join(__dirname, 'uploads') ) );
 
 app.all('*', (req, res, next) => {
     req.status(404).json({ status: status[404], message: 'This source is not found' });
