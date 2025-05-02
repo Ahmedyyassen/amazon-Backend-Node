@@ -1,93 +1,46 @@
-const asyncWrapper = require('../middlewares/asyncWrapper');
-const { getUserByEmail, createUser, saveUser } = require('../model/user.model');
-const appError = require('../utils/AppError');
-const status = require('../utils/httpStatusText');
-const generateJWT = require('../utils/generateJWT');
-const { hash, compare } = require('bcryptjs');
-const { cloudinaryUploadImage } = require('../utils/cloudinary')
+const asyncWrapper = require("../middlewares/asyncWrapper");
+const { getUserByEmail, updateUser } = require("../model/user.model");
+const { cloudinaryUploadImage, cloudinaryRemoveImage } = require("../utils/cloudinary");
+const httpStatusText = require("../utils/httpStatusText");
+const appError = require("../utils/AppError");
 
-const register = asyncWrapper(
-    async(req, res, next)=>{
-        const { username, email, password, role } = req.body;
+
+
+
+const editProfilePhoto = asyncWrapper(
+    async (req, res, next) => {
         
-        if(!username ||!email ||!password){
-            const error = appError.create("All fields are required", 203, status[203]);
-            return next(error);
-        }
-        const isExist = await getUserByEmail(email);
-        if (isExist) {
-            const error = appError.create("User already exist", 400, status[400]);
-            return next(error);
-        }
-        const hashedPassword = await hash(password, 10);
-
-        const newUser = createUser({
-            username,
-            email,
-            password: hashedPassword,
-            role
-        })
-        const token = await generateJWT({ id: newUser._id, email, role });
-        if(req.file){
-          const image = await cloudinaryUploadImage(req.file);
-            newUser.avatar = { url: image.secure_url, public_id: image.public_id };
-            // await cloudinaryRemoveImage(newUser.avatar.public_id);
-        }
-        newUser.token = token;
-        await saveUser(newUser);
-        res.status(201).json({status: status[201],message: "User registered successfully", data: {newUser} })
-    })
-
-
-
-const login = asyncWrapper(
-    async(req, res, next)=>{
-        const { email, password } = req.body;
-        if(!email || !password){
-            const error = appError.create("All fields are required", 203, status[203]);
-            return next(error);
-        }
-        const user = await getUserByEmail(email);        
-        if(!user){
-            const error = appError.create("User not found", 404, status[404]);
-            return next(error);
-        }
-        const isMatch = await compare(password, user.password);
-        
-        if(!isMatch){
-            const error = appError.create("Password is incorrect", 401, status[401]);
-            return next(error);
-        }
-        if (user && isMatch) {            
-            const token = await generateJWT({ id: user._id, email, role:user.role });
-            const tokenOption = { httpOnly: true, secure: true };
-            res.cookie('token', token, tokenOption).status(200)
-            .json({status: status[200], message: "User logged in successfully", data: {token} })
-        }else{
-            const error = appError.create("Invalid credentials", 500, status[500]);
-            return next(error);
-        }
-    })
-const getUser = asyncWrapper(
-    async(req, res, next)=>{
-        const user = await getUserByEmail(req.currentUser.email);
-        if(!user){
-            const error = appError.create("User not found", 404, status[404]);
-            return next(error);
-        }
-        res.status(200).json({ status: status[200], message: "User fetched successfully", data: {user} })
-    })
+        const { email } = req.currentUser;
+        const user = await getUserByEmail(email);
     
-const logout = asyncWrapper(
-    async(req, res, next)=>{
-        res.clearCookie('token').status(200)
-       .json({status: status[200], message: "User logged out successfully" })
-    })
+        if(!user){
+            const error = appError.create( "User not found", 404, httpStatusText[404])
+            return next(error);
+        }
+        if(req.file){
+            await cloudinaryRemoveImage(user.avatar.public_id); 
+            const image = await cloudinaryUploadImage(req.file);
+            user.avatar = { url: image.secure_url, public_id: image.public_id };
+              const updatedUser = await updateUser(user._id, user);
+              res.status(200).json({ status: httpStatusText[200] ,message: "Profile photo updated successfully", data: {user: updatedUser} });
+          }
+})
 
+const updateUserFn = asyncWrapper(
+    async (req, res, next) => {
+        const { username } = req.body;
+        const { email } = req.currentUser;
+        const user = await getUserByEmail(email);
+    
+        if(!user){
+            const error = appError.create( "User not found", 404, httpStatusText[404])
+            return next(error);
+        }
+        user.username = username;
+    
+        const updatedUser = await updateUser(user._id, user);
+        res.status(200).json({ status: httpStatusText[200], message: "User updated successfully", data: { user: updatedUser } });
+    }
+)
 
-module.exports = {
-    register,
-    login,
-    getUser,
-    logout
-}
+module.exports = { editProfilePhoto, updateUserFn };

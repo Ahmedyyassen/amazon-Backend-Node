@@ -41,12 +41,13 @@ const userSchema = new Schema({
 const userModel = model('User', userSchema);
 
 // Export functions
-const getUserByEmail = (email)=> userModel.findOne({email});
-const getUserById = (id)=> userModel.findOne({_id: id});
-const createUser = (data)=> new userModel(data);
-const saveUser = (newUser) => newUser.save();
-const deleteUserById = (id)=> userModel.findOneAndDelete({_id: id});
-const updateUser = (id, user)=> userModel.findOneAndUpdate(id, user);
+const getAllUsers =    async (data)=> userModel.find(data, {__v: false, token:false});
+const getUserByEmail = async(email)=> userModel.findOne({email}, {__v: false, token:false}).exec();
+const getUserById =    async(id)=> userModel.findOne({_id: id}, {__v: false, password: false ,token:false}).exec();
+const createUser =     async(data)=> new userModel(data);
+const saveUser =       async(newUser) => newUser.save();
+const deleteUserById = async(id)=> userModel.findOneAndDelete({_id: id});
+const updateUser =     async(id, user)=> userModel.updateOne({_id: id}, {$set: {...user} } );
 
 module.exports = {
     userModel,
@@ -55,6 +56,7 @@ module.exports = {
     createUser,
     saveUser,
     deleteUserById,
-    updateUser
+    updateUser,
+    getAllUsers
 };
 

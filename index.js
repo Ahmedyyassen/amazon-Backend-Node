@@ -6,13 +6,14 @@ const http = require('http');
 const connectDB = require('./config/db');
 const app = express();
 const userRoutes = require('./routes/user.routes');
+const dashboardRouter = require("./routes/dashboard.routes")
 const status = require('./utils/httpStatusText');
 const cookieParser = require('cookie-parser')
 const { join } = require('path'); 
 
 // Middleware
 app.use(cors({
-    // origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL,
     credentials: true,
 }));
 app.use(express.json());
@@ -22,6 +23,7 @@ app.use(express.urlencoded({extended: false}));
 
 //routes
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRouter)
 app.use('/api/uploads', express.static(join(__dirname, 'uploads') ) );
 
 app.all('*', (req, res, next) => {

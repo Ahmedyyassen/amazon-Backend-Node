@@ -10,7 +10,7 @@ cloudinary.config({
 
 // Upload image to cloudinary
 const cloudinaryUploadImage = async(file)=>{
-    try {
+    try {        
         const imagePath = join(__dirname, `../uploads/${file.filename}`);
         const data = await cloudinary.uploader.upload(imagePath,{
             resource_type: 'auto'
